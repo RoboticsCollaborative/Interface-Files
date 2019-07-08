@@ -31,6 +31,7 @@ from uldaq import (get_daq_device_inventory, DaqDevice, InterfaceType,
 #ROS IMPORTS
 import rospy
 from std_msgs.msg import Float32
+from std_msgs.msg import Float64MultiArray
 
 import math
 
@@ -39,7 +40,7 @@ import math
 lastFinalOut1 = 0
 lastFinalOut2 = 0
 
-vOutVal = 1
+
 hTVal = 000
 startCnt = 0
 oVal1 = 0
@@ -50,9 +51,6 @@ gamma2 = 0
 val1 = 0
 val2 = 0
 
-def callbackVOut(data):
-    global vOutVal
-    vOutVal = data.data
 
 def callbackHT(data):
     global hTVal
@@ -63,20 +61,17 @@ def callbackHT(data):
 
 def main():
     #ROS
-    pub = rospy.Publisher('daqChannel', Float32, queue_size=10)
-    pubVel = rospy.Publisher('daqVel', Float32, queue_size=10)
-    rospy.init_node('daqReadChannel', anonymous=True)
+    pub = rospy.Publisher('daq_pos_ref', Float64MultiArray, queue_size=10)
+    rospy.init_node('glovereader', anonymous=True)
     rate = rospy.Rate(10) # 10hz
 
-    rospy.Subscriber('daqVOut', Float32, callbackVOut)
-    rospy.Subscriber('daqHT', Float32, callbackHT)
+    rospy.Subscriber('gui_home', Float32, callbackHT)
 
 
 
     global lastFinalOut1
     global lastFinalOut2
 
-    global vOutVal
     global hTVal
     global startCnt
     global oVal1
@@ -181,23 +176,16 @@ def main():
 		    gamma2 = val2 - oVal2
 		    hTVal = 000
 		    print('Reset theta 2 successfully')
-		finalOut1 = (val1 - gamma1 - oVal1) * (vOutVal/10)
-		finalOut2 = (val2 - gamma2 - oVal2) * (vOutVal/10)
+		finalOut1 = (val1 - gamma1 - oVal1)
+		finalOut2 = (val2 - gamma2 - oVal2)
 		thetaVal1 = (finalOut1/5) * 360
 		thetaVal2 = (finalOut2/5) * 360
-		pub.publish(thetaVal1)
-		pub.publish(thetaVal2)
+
+		thetaVal = Float64MultiArray()
+		thetaVal.data = [thetaVal1, thetaVal2]
+		pub.publish(thetaVal)
 
 
-		#Check for non infinite velocity
-		if((lastFinalOut1 != 0) and (lastFinalOut2 != 0)):
-		    vel1 = finalOut1/lastFinalOut1
-		    vel2 = finalOut2/lastFinalOut2
-		else:
-		    vel1 = 0
-		    vel2 = 0
-		pubVel.publish(vel1)
-		pubVel.publish(vel2)
 		
 
 		#Update values

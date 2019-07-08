@@ -12,6 +12,7 @@ from PyQt4 import QtCore, QtGui
 import math
 import rospy
 from std_msgs.msg import Float32
+from std_msgs.msg import Float64MultiArray
 
 
 
@@ -31,31 +32,40 @@ except AttributeError:
 
 
 
+
+
 class Ui_Form(object):
 
 
     #widget actions
-    def theta1(self):
-	dataOut = self.slideT1.value()
-	print('Theta one has been changed to: '+ str(dataOut))
-	pubTOut.publish(dataOut)
-    def theta2(self):
-	dataOut = self.slideT2.value()
-	print('Theta two has been changed to: ' + str(dataOut))
-	pubTOut.publish(dataOut)
+    def theta(self):
+	theta1 = self.slideT1.value()
+	theta2 = self.slideT2.value()
+	theta = Float64MultiArray()
+	theta.data = [theta1, theta2]
+	print('Theta one has been changed to: '+ str(theta1))
+	print('Theta two has been changed to: '+ str(theta2))
+	pubTOut.publish(theta)
+
 
     def maxVelocity(self):
-	dataOut = self.slideVelocity.value()
-	print('Maximum velocity has been changed to: ' + str(dataOut))
-	pubVTS.publish(dataOut)
+	vel = self.slideVelocity.value()
+	velSat = Float64MultiArray()
+	velSat.data = [vel]
+	print('Maximum velocity has been changed to: ' + str(vel))
+	pubVelSat.publish(velSat)
     def maxTorque(self):
-	dataOut = self.slideTorque.value()
-	print('Maximum torque has been changed to: ' + str(dataOut))
-	pubVTS.publish(dataOut)
+	tau = self.slideTorque.value()
+	tauSat = Float64MultiArray()
+	tauSat.data = [tau]
+	print('Maximum torque has been changed to: ' + str(tau))
+	pubTauSat.publish(tauSat)
     def stiffness(self):
-	dataOut = self.slideStiffness.value()
-	print('Stiffness has been changed to: ' + str(dataOut))
-	pubVTS.publish(dataOut)
+	stiff = self.slideStiffness.value()
+	stiffness = Float64MultiArray()
+	stiffness.data = [stiff]
+	print('Stiffness has been changed to: ' + str(stiff))
+	pubStiffness.publish(stiffness)
     def homeTheta1(self):
 	print 'New home value for theta one has been reset'
 	signalOut = 111
@@ -70,6 +80,8 @@ class Ui_Form(object):
 
 
     def setupUi(self, Form):
+
+
         Form.setObjectName(_fromUtf8("Form"))
         Form.resize(400, 305)
         self.textMain = QtGui.QTextEdit(Form)
@@ -136,9 +148,9 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
         QtCore.QObject.connect(self.slideT1, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.labelT1.setNum)
-	QtCore.QObject.connect(self.slideT1, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.theta1)
+	QtCore.QObject.connect(self.slideT1, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.theta)
         QtCore.QObject.connect(self.slideT2, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.labelT2.setNum)
-	QtCore.QObject.connect(self.slideT2, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.theta2)
+	QtCore.QObject.connect(self.slideT2, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.theta)
         QtCore.QObject.connect(self.slideVelocity, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.labelVelocity.setNum)
         QtCore.QObject.connect(self.slideVelocity, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.maxVelocity)
         QtCore.QObject.connect(self.slideTorque, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.labelTorque.setNum)
@@ -202,9 +214,11 @@ if __name__ == "__main__":
         Form.show()
 
 	#create publishing node
-	pubVTS = rospy.Publisher('gloveVTS', Float32, queue_size=10)
-	pubTOut = rospy.Publisher('gloveThetaTeleop', Float32, queue_size=10)
-        pubHome = rospy.Publisher('gloveHome', Float32, queue_size=10)
+	pubVelSat = rospy.Publisher('gui_vel_sat', Float64MultiArray, queue_size=10)
+	pubTauSat = rospy.Publisher('gui_tau_sat', Float64MultiArray, queue_size=10)
+	pubStiffness = rospy.Publisher('gui_stiffness', Float64MultiArray, queue_size=10)
+	pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
+        pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
         rospy.init_node('gloveGUITeleop', anonymous=True)
         rate = rospy.Rate(10) # 10hz
 
