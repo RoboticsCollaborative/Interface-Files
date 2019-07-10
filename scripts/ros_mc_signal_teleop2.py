@@ -161,7 +161,7 @@ def main():
 			    val1 = float('{:.6f}'.format(data))
 			if(channel == 1):
 			    val2 = float('{:.6f}'.format(data))
-                    sleep(0.05)
+                    rate.sleep()
                 except (ValueError, NameError, SyntaxError):
                     break
 		if(startCnt == 0):
