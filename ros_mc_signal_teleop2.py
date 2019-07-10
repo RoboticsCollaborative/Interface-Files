@@ -64,7 +64,9 @@ val2 = 0
 #Gamme is used to calculate val1 and val2 from oVal1 and oVal2
 gamma1 = 0
 gamma2 = 0
-
+#Theta values to be printed in next loop iteration (1 iteration data delay)
+thetaVal1 = 0
+thetaVal2 = 0
 
 
 
@@ -77,7 +79,6 @@ gamma2 = 0
 def callbackHT(data):
     global hTVal
     hTVal = data.data
-    print('New home value for theta set, signal id: ', hTVal)
 
 
 
@@ -111,6 +112,8 @@ def main():
     global val2
     global finalOut1
     global finalOut2
+    global thetaVal1
+    global thetaVal2
 
     #Configure DAQ device
     daq_device = None
@@ -185,6 +188,10 @@ def main():
 			    val1 = float('{:.6f}'.format(data))
 			if(channel == 1):
 			    val2 = float('{:.6f}'.format(data))
+		    print('')
+		    #Print final theta output from last loop iteration
+		    print('The wrist angle is: ', thetaVal1)
+		    print('The finger angle is: ', thetaVal2)
 		    #ROS sleep
                     rate.sleep()
                 except (ValueError, NameError, SyntaxError):
@@ -198,11 +205,9 @@ def main():
 		if(hTVal == 111):
 		    gamma1 = val1 - oVal1
 		    hTVal = 000
-		    print('Reset theta 1 successfully')
 		if(hTVal == 222):
 		    gamma2 = val2 - oVal2
 		    hTVal = 000
-		    print('Reset theta 2 successfully')
 		#Create final variables accounting for reference frames
 		finalOut1 = (val1 - gamma1 - oVal1)
 		finalOut2 = (val2 - gamma2 - oVal2)
@@ -216,9 +221,6 @@ def main():
 		#Update last values for next loop run
 		lastFinalOut1 = finalOut1
 		lastFinalOut2 = finalOut2		
-		#Finally print the output values
-		print('The wrist angle is: ', thetaVal1)
-		print('The finger angle is: ', thetaVal2)
     #Catch errors on loop intervals
         except KeyboardInterrupt:
             pass

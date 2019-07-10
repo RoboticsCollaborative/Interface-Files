@@ -236,24 +236,29 @@ class Ui_Form(object):
     ###############################
     def retranslateUi(self, Form):
         Form.setWindowTitle(_translate("Form", "Form", None))
+	#Text main
         self.textMain.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:22pt;\">Teleop</span></p></body></html>", None))
+	#Text theta teleop
         self.labelT1.setText(_translate("Form", "Theta One", None))
+        self.labelT2.setText(_translate("Form", "Theta Two", None))
+	#Text home resets
         self.pushHome1.setText(_translate("Form", "Reset One", None))
         self.textH1.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home One</p></body></html>", None))
+        self.pushHome2.setText(_translate("Form", "Reset Two", None))
         self.textH2.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home Two</p></body></html>", None))
-        self.pushHome2.setText(_translate("Form", "Reset Two", None))
+	#Additional texts
         self.labelVelocity.setText(_translate("Form", "Velocity", None))
         self.labelTorque.setText(_translate("Form", " Torque", None))
         self.labelStiffness.setText(_translate("Form", "Stiffness", None))
@@ -278,7 +283,6 @@ class Ui_Form(object):
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">FAA</p></body></html>", None))
-        self.labelT2.setText(_translate("Form", "Theta Two", None))
 
 
 
@@ -300,20 +304,16 @@ if __name__ == "__main__":
         ui = Ui_Form()
         ui.setupUi(Form)
         Form.show()
-
 	#create publishing node
+	pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
+        pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
 	pubVelSat = rospy.Publisher('gui_vel_sat', Float64MultiArray, queue_size=10)
 	pubTauSat = rospy.Publisher('gui_tau_sat', Float64MultiArray, queue_size=10)
 	pubStiffness = rospy.Publisher('gui_stiffness', Float64MultiArray, queue_size=10)
 	pubFAA = rospy.Publisher('gui_faa', Float32, queue_size=10)
-	pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
-        pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
         rospy.init_node('gloveGUITeleop', anonymous=True)
-        rate = rospy.Rate(10) # 10hz
-
 	#close GUI widget
         sys.exit(app.exec_())
-
     #check for control c
     except rospy.ROSInterruptException:
         pass
