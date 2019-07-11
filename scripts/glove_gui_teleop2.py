@@ -25,6 +25,8 @@ import rospy
 from std_msgs.msg import Float32
 from std_msgs.msg import Float64MultiArray
 
+from rdda_interface.msg import JointCommands
+
 
 
 #Check imports
@@ -59,7 +61,7 @@ except AttributeError:
 class Ui_Form(object):
 
 
-
+    joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=10)
 
 
 
@@ -76,17 +78,17 @@ class Ui_Form(object):
 	theta.data = [theta1, theta2]
 	print('Theta one has been changed to: '+ str(theta1))
 	print('Theta two has been changed to: '+ str(theta2))
-	pubTOut.publish(theta)
+	self.pubTOut.publish(theta)
 
     #Home reset calls
     def homeTheta1(self):
 	print 'New home value for theta one has been reset'
 	signalOut = 111
-	pubHome.publish(signalOut)
+	self.pubHome.publish(signalOut)
     def homeTheta2(self):
 	print "New home value for theta two has been reset"
 	signalOut = 222
-	pubHome.publish(signalOut)
+	self.pubHome.publish(signalOut)
 
     #Additional calls
     def maxVelocity(self):
@@ -94,25 +96,36 @@ class Ui_Form(object):
 	velSat = Float64MultiArray()
 	velSat.data = [vel]
 	print('Maximum velocity has been changed to: ' + str(vel))
-	pubVelSat.publish(velSat)
+	self.pubVelSat.publish(velSat)
+	self.vel_sat = (vel, vel)
+	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
     def maxTorque(self):
 	tau = self.slideTorque.value()
 	tauSat = Float64MultiArray()
 	tauSat.data = [tau]
 	print('Maximum torque has been changed to: ' + str(tau))
-	pubTauSat.publish(tauSat)
+	self.pubTauSat.publish(tauSat)
+	self.tau_sat = (tau, tau)
+	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
     def stiffness(self):
-	stiff = self.slideStiffness.value()
+	stiffVal = self.slideStiffness.value()
 	stiffness = Float64MultiArray()
-	stiffness.data = [stiff]
-	print('Stiffness has been changed to: ' + str(stiff))
-	pubStiffness.publish(stiffness)
+	stiffness.data = [stiffVal]
+	print('Stiffness has been changed to: ' + str(stiffVal))
+	self.pubStiffness.publish(stiffness)
+	self.stiff_val = (stiffVal, stiffVal)
+	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
     def faa(self):
-	faa = self.slideFAA.value()
-	print('Frequency anti alias value has been changed to: ' + str(faa))
-	pubFAA.publish(faa)
+	faaVal = self.slideFAA.value()
+	print('Frequency anti alias value has been changed to: ' + str(faaVal))
+	self.pubFAA.publish(faaVal)
+	self.faa_val = faaVal
+	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
 
-
+    def posCallback(self, data):
+	self.pos_ref = (data.data[0], data.data[1])
+	print(self.pos_ref)
+	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
 
 
 
@@ -122,6 +135,21 @@ class Ui_Form(object):
     #    Ui Setup Method    #
     #########################
     def setupUi(self, Form):
+	self.pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
+        self.pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
+	self.pubVelSat = rospy.Publisher('gui_vel_sat', Float64MultiArray, queue_size=10)
+	self.pubTauSat = rospy.Publisher('gui_tau_sat', Float64MultiArray, queue_size=10)
+	self.pubStiffness = rospy.Publisher('gui_stiffness', Float64MultiArray, queue_size=10)
+	self.pubFAA = rospy.Publisher('gui_faa', Float32, queue_size=10)
+
+        rospy.init_node('gloveGUITeleop', anonymous=True)
+	rospy.Subscriber('daq_pos_ref', Float64MultiArray, self.posCallback)
+        self.joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+	self.pos_ref = (0.0, 0.0)
+	self.vel_sat = (0.0, 0.0)
+	self.tau_sat = (0.0, 0.0)
+	self.stiff_val = (0.0, 0.0)
+	self.faa_val = 20
 	#Define widget dimmensions
         Form.setObjectName(_fromUtf8("Form"))
         Form.resize(400, 370)
@@ -166,14 +194,19 @@ class Ui_Form(object):
         self.slideVelocity.setGeometry(QtCore.QRect(220, 205, 160, 30))
         self.slideVelocity.setOrientation(QtCore.Qt.Horizontal)
         self.slideVelocity.setObjectName(_fromUtf8("horizontalSlider_3"))
+	self.slideVelocity.setMinimum(1)
+	self.slideVelocity.setMaximum(100)
+
         self.slideTorque = QtGui.QSlider(Form)
         self.slideTorque.setGeometry(QtCore.QRect(220, 245, 160, 30))
         self.slideTorque.setOrientation(QtCore.Qt.Horizontal)
         self.slideTorque.setObjectName(_fromUtf8("horizontalSlider_4"))
+
         self.slideStiffness = QtGui.QSlider(Form)
         self.slideStiffness.setGeometry(QtCore.QRect(220, 285, 160, 30))
         self.slideStiffness.setOrientation(QtCore.Qt.Horizontal)
         self.slideStiffness.setObjectName(_fromUtf8("horizontalSlider_5"))
+
         self.slideFAA = QtGui.QSlider(Form)
         self.slideFAA.setGeometry(QtCore.QRect(220, 325, 160, 30))
         self.slideFAA.setOrientation(QtCore.Qt.Horizontal)
@@ -297,23 +330,17 @@ class Ui_Form(object):
 #####################
 if __name__ == "__main__":
     try:
-	#open GUI widget
+	#Open GUI widget
         import sys
         app = QtGui.QApplication(sys.argv)
         Form = QtGui.QWidget()
         ui = Ui_Form()
         ui.setupUi(Form)
         Form.show()
-	#create publishing node
-	pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
-        pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
-	pubVelSat = rospy.Publisher('gui_vel_sat', Float64MultiArray, queue_size=10)
-	pubTauSat = rospy.Publisher('gui_tau_sat', Float64MultiArray, queue_size=10)
-	pubStiffness = rospy.Publisher('gui_stiffness', Float64MultiArray, queue_size=10)
-	pubFAA = rospy.Publisher('gui_faa', Float32, queue_size=10)
-        rospy.init_node('gloveGUITeleop', anonymous=True)
-	#close GUI widget
+
+
+	#Close GUI widget
         sys.exit(app.exec_())
-    #check for control c
+    #Check for control c
     except rospy.ROSInterruptException:
         pass
