@@ -43,6 +43,9 @@ from std_msgs.msg import Float64MultiArray
 #Additional imports
 import math
 
+from rdda_interface.msg import JointCommands
+from rdda_interface.msg import JointStates
+
 
 
 #Instantiate global variables
@@ -98,6 +101,9 @@ def main():
     rate = rospy.Rate(10) # 10hz
     #Crate ROS subscriber to catch home reset signals
     rospy.Subscriber('gui_home', Float32, callbackHT)
+
+    joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+    joint_sub = rospy.Subscriber("rdd/joint_stats", JointStates, callbackHT)
 
     #Declare global variables as global
     global lastFinalOut1
@@ -200,6 +206,8 @@ def main():
 		if(startCnt == 0):
 		    oVal1 = val1
 		    oVal2 = val2
+		    gamma1 = val1 - oVal1
+		    gamma2 = val2 - oVal2
 		    startCnt = 1
 		#Check home reset signals
 		if(hTVal == 111):
@@ -211,16 +219,24 @@ def main():
 		#Create final variables accounting for reference frames
 		finalOut1 = (val1 - gamma1 - oVal1)
 		finalOut2 = (val2 - gamma2 - oVal2)
-		#Convert final variables to degrees
-		thetaVal1 = (finalOut1/5) * 360
-		thetaVal2 = (finalOut2/5) * 360
-		#Create multiarray with theta values and publish to ROS
-		thetaVal = Float64MultiArray()
-		thetaVal.data = [thetaVal1, thetaVal2]
-		pub.publish(thetaVal)
+		#Convert final variables to degrees (6.28 = 360degrees * (~0.175 radians/degree)) 
+		thetaVal1 = (finalOut1/5) * 6.28
+		thetaVal2 = (finalOut2/5) * 6.28
 		#Update last values for next loop run
 		lastFinalOut1 = finalOut1
-		lastFinalOut2 = finalOut2		
+		lastFinalOut2 = finalOut2
+		#Create multiarray with theta values and publish to ROS
+		if(thetaVal1 > 1):
+		    thetaVal1 = 1
+		if(thetaVal1 < -1):
+		    thetaVal1 = -1
+		if(thetaVal2 > 1):
+		    thetaVal2 = 1
+		if(thetaVal2 < -1):
+		    thetaVal2 = -1
+		thetaVal = Float64MultiArray()
+		thetaVal.data = [thetaVal1, thetaVal2]
+		pub.publish(thetaVal)		
     #Catch errors on loop intervals
         except KeyboardInterrupt:
             pass
