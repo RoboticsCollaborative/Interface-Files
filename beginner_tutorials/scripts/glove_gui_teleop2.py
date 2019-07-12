@@ -34,6 +34,7 @@ from subprocess import Popen
 
 
 
+from PyQt4.QtCore import * 
 
 
 #Check imports
@@ -154,9 +155,9 @@ class Ui_Form(object):
 	pubTest = rospy.Publisher('test', Float32, queue_size = 10)
 	pubTest.publish(1.1)
 	if(self.mode == 0):
-	    joint_pub.publish((0.0, 0.0), self.vel_sat, self.tau_sat, (0.0, 0.0), 10)
+	    joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
 	if(self.mode == 1):
-	    self.alpha_ref = (((self.pos_ref[1]/2) + (self.pos_ref[0]/2)), ((-1)*(self.pos_ref[1]/2) + (self.pos_ref[0]/2)))
+	    self.alpha_ref = (((self.pos_ref[0]/2) + (self.pos_ref[1]/2)), ((-1)*(self.pos_ref[0]/2) + (self.pos_ref[1]/2)))
 	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 	if(self.mode == 2):
 	    self.alpha_ref = (((self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)), ((-1)*(self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)))
@@ -167,7 +168,6 @@ class Ui_Form(object):
 	os.system('clear')
 	self.mode = 0
 	self.labelMode.setText('   SAFE')
-
 
 
 
@@ -253,18 +253,26 @@ class Ui_Form(object):
         self.slideVelocity.setGeometry(QtCore.QRect(220, 205, 160, 30))
         self.slideVelocity.setOrientation(QtCore.Qt.Horizontal)
         self.slideVelocity.setObjectName(_fromUtf8("horizontalSlider_3"))
-	self.slideVelocity.setMinimum(1)
+	self.slideVelocity.setMinimum(0)
 	self.slideVelocity.setMaximum(100)
+	self.slideVelocity.setValue(20)
+	self.slideVelocity.setTickInterval(1)
 
         self.slideTorque = QtGui.QSlider(Form)
         self.slideTorque.setGeometry(QtCore.QRect(220, 245, 160, 30))
         self.slideTorque.setOrientation(QtCore.Qt.Horizontal)
         self.slideTorque.setObjectName(_fromUtf8("horizontalSlider_4"))
+	self.slideTorque.setMinimum(0)
+	self.slideTorque.setMaximum(5)
+	self.slideTorque.setValue(1)
 
         self.slideStiffness = QtGui.QSlider(Form)
         self.slideStiffness.setGeometry(QtCore.QRect(220, 285, 160, 30))
         self.slideStiffness.setOrientation(QtCore.Qt.Horizontal)
         self.slideStiffness.setObjectName(_fromUtf8("horizontalSlider_5"))
+	self.slideStiffness.setMinimum(0)
+	self.slideStiffness.setMaximum (20)
+	self.slideStiffness.setValue(1)
 
         self.slideFAA = QtGui.QSlider(Form)
         self.slideFAA.setGeometry(QtCore.QRect(220, 325, 160, 30))
