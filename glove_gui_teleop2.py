@@ -27,6 +27,14 @@ from std_msgs.msg import Float64MultiArray
 
 from rdda_interface.msg import JointCommands
 
+from sys import executable
+import subprocess
+import os
+from subprocess import Popen
+
+
+
+from PyQt4.QtCore import * 
 
 
 #Check imports
@@ -48,11 +56,6 @@ except AttributeError:
 
 
 
-
-
-
-
-
 #########################
 #########################
 #####    UI CLASS   #####
@@ -61,10 +64,8 @@ except AttributeError:
 class Ui_Form(object):
 
 
-    joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=10)
 
-
-
+    global joint_pub
 
     #########################
     #    Callback Methods   #
@@ -74,11 +75,23 @@ class Ui_Form(object):
     def theta(self):
 	theta1 = self.slideT1.value()
 	theta2 = self.slideT2.value()
-	theta = Float64MultiArray()
-	theta.data = [theta1, theta2]
+	self.teleopTheta = (theta1, theta2)
 	print('Theta one has been changed to: '+ str(theta1))
 	print('Theta two has been changed to: '+ str(theta2))
-	self.pubTOut.publish(theta)
+	self.pubTOut.publish(self.teleopTheta)
+	self.pubToNet()
+
+    def posCallback(self, data):
+	self.pos_ref = (data.data[0], data.data[1])
+	self.pubToNet()
+    def gammaCallback(self, data):
+	self.gamma = (data.data[0], data.data[1])
+	self.pubGamma.publish(data)
+    def stim(self, data):
+	gam = Float64MultiArray()
+	gam.data = [(self.gamma[0]), (self.gamma[1])]
+	print(gam)
+	self.pubGamma.publish(gam)
 
     #Home reset calls
     def homeTheta1(self):
@@ -98,7 +111,7 @@ class Ui_Form(object):
 	print('Maximum velocity has been changed to: ' + str(vel))
 	self.pubVelSat.publish(velSat)
 	self.vel_sat = (vel, vel)
-	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
+	self.pubToNet()
     def maxTorque(self):
 	tau = self.slideTorque.value()
 	tauSat = Float64MultiArray()
@@ -106,7 +119,7 @@ class Ui_Form(object):
 	print('Maximum torque has been changed to: ' + str(tau))
 	self.pubTauSat.publish(tauSat)
 	self.tau_sat = (tau, tau)
-	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
+	self.pubToNet()
     def stiffness(self):
 	stiffVal = self.slideStiffness.value()
 	stiffness = Float64MultiArray()
@@ -114,18 +127,47 @@ class Ui_Form(object):
 	print('Stiffness has been changed to: ' + str(stiffVal))
 	self.pubStiffness.publish(stiffness)
 	self.stiff_val = (stiffVal, stiffVal)
-	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
+	self.pubToNet()
     def faa(self):
 	faaVal = self.slideFAA.value()
 	print('Frequency anti alias value has been changed to: ' + str(faaVal))
 	self.pubFAA.publish(faaVal)
 	self.faa_val = faaVal
-	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
+	self.pubToNet()
 
-    def posCallback(self, data):
-	self.pos_ref = (data.data[0], data.data[1])
-	print(self.pos_ref)
-	self.joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 20)
+
+    def modeChange(self):
+        if(self.mode == 0):
+	    self.labelMode.setText('   DAQ')
+	    self.proc = subprocess.Popen(os.path.expanduser('~')  + "/catkin_ws/src/beginner_tutorials/scripts/ros_mc_signal_teleop3.py", shell = False )
+	    self.mode = 1
+	elif(self.mode == 1):
+	    self.labelMode.setText(' TELEOP')
+	    self.proc.kill()
+	    os.system('clear')
+	    self.mode = 2
+	elif(self.mode == 2):
+	    self.labelMode.setText('   SAFE')
+	    self.mode = 0
+
+    def pubToNet(self):
+	joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+	pubTest = rospy.Publisher('test', Float32, queue_size = 10)
+	pubTest.publish(1.1)
+	if(self.mode == 0):
+	    joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
+	if(self.mode == 1):
+	    self.alpha_ref = (((self.pos_ref[0]/2) + (self.pos_ref[1]/2)), ((-1)*(self.pos_ref[0]/2) + (self.pos_ref[1]/2)))
+	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	if(self.mode == 2):
+	    self.alpha_ref = (((self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)), ((-1)*(self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)))
+	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+
+    def abort(self):
+	self.proc.kill()
+	os.system('clear')
+	self.mode = 0
+	self.labelMode.setText('   SAFE')
 
 
 
@@ -135,24 +177,33 @@ class Ui_Form(object):
     #    Ui Setup Method    #
     #########################
     def setupUi(self, Form):
-	self.pubTOut = rospy.Publisher('gui_theta_teleop', Float64MultiArray, queue_size=10)
+	self.pubTOut = rospy.Publisher('gui_theta_teleop', Float32, queue_size=10)
         self.pubHome = rospy.Publisher('gui_home', Float32, queue_size=10)
 	self.pubVelSat = rospy.Publisher('gui_vel_sat', Float64MultiArray, queue_size=10)
 	self.pubTauSat = rospy.Publisher('gui_tau_sat', Float64MultiArray, queue_size=10)
 	self.pubStiffness = rospy.Publisher('gui_stiffness', Float64MultiArray, queue_size=10)
 	self.pubFAA = rospy.Publisher('gui_faa', Float32, queue_size=10)
+	self.pubGamma = rospy.Publisher('gamma_keep', Float64MultiArray, queue_size = 1)
+
 
         rospy.init_node('gloveGUITeleop', anonymous=True)
 	rospy.Subscriber('daq_pos_ref', Float64MultiArray, self.posCallback)
-        self.joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+	rospy.Subscriber('gamma_store', Float64MultiArray, self.gammaCallback)
+	rospy.Subscriber('stimulate', Float32, self.stim)
+	
+	self.startCnt = 0
+	self.gamma = (0.0, 0.0)
 	self.pos_ref = (0.0, 0.0)
+	self.alpha_ref = (0.0, 0.0)
+	self.teleopTheta = (0.0, 0.0)
 	self.vel_sat = (0.0, 0.0)
 	self.tau_sat = (0.0, 0.0)
 	self.stiff_val = (0.0, 0.0)
 	self.faa_val = 20
+	self.mode = 0
 	#Define widget dimmensions
         Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(400, 370)
+        Form.resize(400, 475)
 	#Main text
         self.textMain = QtGui.QTextEdit(Form)
         self.textMain.setGeometry(QtCore.QRect(130, 15, 130, 50))
@@ -182,6 +233,14 @@ class Ui_Form(object):
         self.pushHome2 = QtGui.QPushButton(Form)
         self.pushHome2.setGeometry(QtCore.QRect(240, 165, 100, 27))
         self.pushHome2.setObjectName(_fromUtf8("pushButton_2"))
+	#Mode pushbutton
+        self.pushMode = QtGui.QPushButton(Form)
+        self.pushMode.setGeometry(QtCore.QRect(240, 365, 120, 30))
+        self.pushMode.setObjectName(_fromUtf8("pushButton_2"))
+	#ABORT pushbutton
+        self.pushAbort = QtGui.QPushButton(Form)
+        self.pushAbort.setGeometry(QtCore.QRect(100, 405, 200, 60))
+        self.pushAbort.setObjectName(_fromUtf8("pushButton_2"))
 	#Home text
         self.textH1 = QtGui.QTextEdit(Form)
         self.textH1.setGeometry(QtCore.QRect(50, 115, 100, 40))
@@ -194,18 +253,26 @@ class Ui_Form(object):
         self.slideVelocity.setGeometry(QtCore.QRect(220, 205, 160, 30))
         self.slideVelocity.setOrientation(QtCore.Qt.Horizontal)
         self.slideVelocity.setObjectName(_fromUtf8("horizontalSlider_3"))
-	self.slideVelocity.setMinimum(1)
+	self.slideVelocity.setMinimum(0)
 	self.slideVelocity.setMaximum(100)
+	self.slideVelocity.setValue(20)
+	self.slideVelocity.setTickInterval(1)
 
         self.slideTorque = QtGui.QSlider(Form)
         self.slideTorque.setGeometry(QtCore.QRect(220, 245, 160, 30))
         self.slideTorque.setOrientation(QtCore.Qt.Horizontal)
         self.slideTorque.setObjectName(_fromUtf8("horizontalSlider_4"))
+	self.slideTorque.setMinimum(0)
+	self.slideTorque.setMaximum(5)
+	self.slideTorque.setValue(1)
 
         self.slideStiffness = QtGui.QSlider(Form)
         self.slideStiffness.setGeometry(QtCore.QRect(220, 285, 160, 30))
         self.slideStiffness.setOrientation(QtCore.Qt.Horizontal)
         self.slideStiffness.setObjectName(_fromUtf8("horizontalSlider_5"))
+	self.slideStiffness.setMinimum(0)
+	self.slideStiffness.setMaximum (20)
+	self.slideStiffness.setValue(1)
 
         self.slideFAA = QtGui.QSlider(Form)
         self.slideFAA.setGeometry(QtCore.QRect(220, 325, 160, 30))
@@ -213,17 +280,21 @@ class Ui_Form(object):
         self.slideFAA.setObjectName(_fromUtf8("horizontalSlider_6"))
 	#Labels for additional sliders
         self.labelVelocity = QtGui.QLabel(Form)
-        self.labelVelocity.setGeometry(QtCore.QRect(150, 205, 60, 20))
+        self.labelVelocity.setGeometry(QtCore.QRect(150, 210, 60, 20))
         self.labelVelocity.setObjectName(_fromUtf8("label_3"))
         self.labelTorque = QtGui.QLabel(Form)
-        self.labelTorque.setGeometry(QtCore.QRect(150, 245, 60, 20))
+        self.labelTorque.setGeometry(QtCore.QRect(150, 250, 60, 20))
         self.labelTorque.setObjectName(_fromUtf8("label_4"))
         self.labelStiffness = QtGui.QLabel(Form)
-        self.labelStiffness.setGeometry(QtCore.QRect(150, 285, 60, 20))
+        self.labelStiffness.setGeometry(QtCore.QRect(150, 290, 60, 20))
         self.labelStiffness.setObjectName(_fromUtf8("label_5"))
         self.labelFAA = QtGui.QLabel(Form)
-        self.labelFAA.setGeometry(QtCore.QRect(150, 325, 60, 20))
+        self.labelFAA.setGeometry(QtCore.QRect(150, 330, 60, 20))
         self.labelFAA.setObjectName(_fromUtf8("label_6"))
+	#Label for mode
+        self.labelMode = QtGui.QLabel(Form)
+        self.labelMode.setGeometry(QtCore.QRect(150, 355, 60, 50))
+        self.labelMode.setObjectName(_fromUtf8("label_6"))
 	#Text for additional sliders
         self.textVelocity = QtGui.QTextEdit(Form)
         self.textVelocity.setGeometry(QtCore.QRect(10, 205, 120, 30))
@@ -237,6 +308,10 @@ class Ui_Form(object):
         self.textFAA = QtGui.QTextEdit(Form)
         self.textFAA.setGeometry(QtCore.QRect(10, 325, 120, 30))
         self.textFAA.setObjectName(_fromUtf8("textEdit_7"))
+	#Text for mode
+        self.textMode = QtGui.QTextEdit(Form)
+        self.textMode.setGeometry(QtCore.QRect(10, 365, 120, 30))
+        self.textMode.setObjectName(_fromUtf8("textEdit_7"))
 	#Ui retranslate
         self.retranslateUi(Form)
 	#Create theta teleop objects w/ callbacks
@@ -257,6 +332,8 @@ class Ui_Form(object):
         QtCore.QObject.connect(self.slideStiffness, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.stiffness)
         QtCore.QObject.connect(self.slideFAA, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.labelFAA.setNum)
         QtCore.QObject.connect(self.slideFAA, QtCore.SIGNAL(_fromUtf8("valueChanged(int)")), self.faa)
+	QtCore.QObject.connect(self.pushMode, QtCore.SIGNAL(_fromUtf8("clicked()")), self.modeChange)
+	QtCore.QObject.connect(self.pushAbort, QtCore.SIGNAL(_fromUtf8("clicked()")), self.abort)
 
 
 
@@ -316,6 +393,17 @@ class Ui_Form(object):
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">FAA</p></body></html>", None))
+	#Mode font setup
+        self.labelMode.setText(_translate("Form", "   SAFE", None))
+        self.textMode.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Mode</p></body></html>", None))
+        self.pushMode.setText(_translate("Form", "Change Mode", None))
+	#Abort font setup
+        self.pushAbort.setText(_translate("Form", "ABORT", None))
+
 
 
 
@@ -337,7 +425,6 @@ if __name__ == "__main__":
         ui = Ui_Form()
         ui.setupUi(Form)
         Form.show()
-
 
 	#Close GUI widget
         sys.exit(app.exec_())
