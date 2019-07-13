@@ -97,8 +97,6 @@ class DAQ_Collect(object):
         #(0-5 volts) => (0-360 degrees) => (0-(~6.28 rads))
         self.thetaVal1 = 0
         self.thetaVal2 = 0
-        #mPar is used for maximum radian angle accepted by motorcontrol
-        self.mPar = 2
 
 	######################
 	self.safety = 0.0
@@ -239,18 +237,9 @@ class DAQ_Collect(object):
 		        #Update last values for next loop run
 		        self.lastFinalOut1 = self.finalOut1
 		        self.lastFinalOut2 = self.finalOut2
-		        #Check for values outside of min/max parameter
-		        if(self.thetaVal1 >= self.mPar):
-		            self.thetaVal1 = self.mPar
-		        if(self.thetaVal1 <= ((-1)*(self.mPar))):
-		            self.thetaVal1 = ((-1)*(self.mPar))
-		        if(self.thetaVal2 >= self.mPar):
-		            self.thetaVal2 = self.mPar
-		        if(self.thetaVal2 <= ((-1)*(self.mPar))):
-		            self.thetaVal2 = ((-1)*(self.mPar))
 		        #Create multiarray with theta values and publish to ROS
 		        thetaVal = Float64MultiArray()
-		        thetaVal.data = [self.thetaVal1, self.thetaVal2]
+	    		thetaVal.data = [(self.thetaVal1 + self.thetaVal2), ((-1)*(self.thetaVal1) + self.thetaVal2)]
 		        self.pub.publish(thetaVal)
 		        gamma = Float64MultiArray()
 		        gamma.data = [self.gamma1, self.gamma2]
