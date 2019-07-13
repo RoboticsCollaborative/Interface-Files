@@ -8,11 +8,14 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+
+
 from PyQt4 import QtCore, QtGui
 import math
 import rospy
 from std_msgs.msg import Float32
 from std_msgs.msg import Float64MultiArray
+
 
 
 
@@ -34,7 +37,13 @@ except AttributeError:
 
 
 
+
+
+
+
+
 class Ui_Form(object):
+
 
 
     #widget actions
@@ -66,6 +75,8 @@ class Ui_Form(object):
 	stiffness.data = [stiff]
 	print('Stiffness has been changed to: ' + str(stiff))
 	pubStiffness.publish(stiffness)
+
+
     def homeTheta1(self):
 	print 'New home value for theta one has been reset'
 	signalOut = 111
@@ -74,6 +85,8 @@ class Ui_Form(object):
 	print "New home value for theta two has been reset"
 	signalOut = 222
 	pubHome.publish(signalOut)
+
+
 
 
 
@@ -161,6 +174,9 @@ class Ui_Form(object):
 	QtCore.QObject.connect(self.pushHome2, QtCore.SIGNAL(_fromUtf8("clicked()")), self.homeTheta2)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
+
+
+
     def retranslateUi(self, Form):
         Form.setWindowTitle(_translate("Form", "Form", None))
         self.textMain.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
@@ -200,6 +216,9 @@ class Ui_Form(object):
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Stiffness</p></body></html>", None))
         self.labelT2.setText(_translate("Form", "Theta Two", None))
+
+
+
 
 
 #main
