@@ -98,7 +98,7 @@ class DAQ_Collect(object):
         self.thetaVal1 = 0
         self.thetaVal2 = 0
         #mPar is used for maximum radian angle accepted by motorcontrol
-        self.mPar = 1
+        self.mPar = 2
 
 	######################
 	self.safety = 0.0
