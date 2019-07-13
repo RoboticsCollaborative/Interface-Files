@@ -250,7 +250,7 @@ class DAQ_Collect(object):
 		            self.thetaVal2 = ((-1)*(self.mPar))
 		        #Create multiarray with theta values and publish to ROS
 		        thetaVal = Float64MultiArray()
-		        thetaVal.data = [self.thetaVal1, self.thetaVal2]
+		        thetaVal.data = [self.thetaVal1 + self.thetaVal2, (-1)*(self.thetaVal1) + self.thetaVal2]
 		        self.pub.publish(thetaVal)
 		        gamma = Float64MultiArray()
 		        gamma.data = [self.gamma1, self.gamma2]

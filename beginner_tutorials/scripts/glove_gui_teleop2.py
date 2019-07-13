@@ -139,7 +139,7 @@ class Ui_Form(object):
     def modeChange(self):
         if(self.mode == 0):
 	    self.labelMode.setText('   DAQ')
-	    self.proc = subprocess.Popen(os.path.expanduser('~')  + "/catkin_ws/src/beginner_tutorials/scripts/ros_mc_signal_teleop3.py", shell = False )
+	    self.proc = subprocess.Popen(os.path.expanduser('~')  + "/catkin_ws/src/Interface-Files/beginner_tutorials/scripts/ros_mc_signal_teleop3.py", shell = False )
 	    self.mode = 1
 	elif(self.mode == 1):
 	    self.labelMode.setText(' TELEOP')
@@ -157,11 +157,9 @@ class Ui_Form(object):
 	if(self.mode == 0):
 	    joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
 	if(self.mode == 1):
-	    self.alpha_ref = (((self.pos_ref[0]/2) + (self.pos_ref[1]/2)), ((-1)*(self.pos_ref[0]/2) + (self.pos_ref[1]/2)))
-	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	    joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 	if(self.mode == 2):
-	    self.alpha_ref = (((self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)), ((-1)*(self.teleopTheta[0]/2) + (self.teleopTheta[1]/2)))
-	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	    joint_pub.publish(self.pos_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 
     def abort(self):
 	self.proc.kill()
@@ -194,7 +192,6 @@ class Ui_Form(object):
 	self.startCnt = 0
 	self.gamma = (0.0, 0.0)
 	self.pos_ref = (0.0, 0.0)
-	self.alpha_ref = (0.0, 0.0)
 	self.teleopTheta = (0.0, 0.0)
 	self.vel_sat = (0.0, 0.0)
 	self.tau_sat = (0.0, 0.0)
