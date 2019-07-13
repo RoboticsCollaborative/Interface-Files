@@ -157,7 +157,7 @@ class Ui_Form(object):
 	if(self.mode == 0):
 	    joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
 	if(self.mode == 1):
-	    self.alpha_ref = (((self.pos_ref[0]/2) + (self.pos_ref[1]/2)), ((-1)*(self.pos_ref[0]/2) + (self.pos_ref[1]/2)))
+	    self.alpha_ref = (((self.pos_ref[0]) + (self.pos_ref[1])), ((-1)*(self.pos_ref[0]) + (self.pos_ref[1])))
 	    joint_pub.publish(self.alpha_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 	if(self.mode == 2):
 	    self.alpha_ref = (((self.teleopTheta[0]) + (self.teleopTheta[1])), ((-1)*(self.teleopTheta[0]) + (self.teleopTheta[1])))
