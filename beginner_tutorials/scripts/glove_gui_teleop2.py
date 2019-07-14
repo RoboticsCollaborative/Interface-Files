@@ -151,7 +151,7 @@ class Ui_Form(object):
         if(self.mode == 0):
 	    self.labelMode.setText('   DAQ')
 	    self.getFileName()
-	    self.proc = subprocess.Popen(os.path.expanduser('~')  + "/catkin_ws/src/Interface-Files/beginner_tutorials/scripts/ros_mc_signal_teleop3.py", shell = False )
+	    self.proc = subprocess.Popen(self.fileName, shell = False )
 	    self.mode = 1
 	elif(self.mode == 1):
 	    self.labelMode.setText(' TELEOP')
