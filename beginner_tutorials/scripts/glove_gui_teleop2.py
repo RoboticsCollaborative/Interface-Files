@@ -29,6 +29,7 @@ from std_msgs.msg import Float32
 from std_msgs.msg import Float64MultiArray
 #Custom message type ROS interface
 from rdda_interface.msg import JointCommands
+from rdda_interface.msg import JointStates
 #Relative path and child program imports
 import os
 from sys import executable
@@ -68,8 +69,6 @@ except AttributeError:
 class Ui_Form(object):
 
 
-
-    global joint_pub
 
 
 
@@ -169,7 +168,6 @@ class Ui_Form(object):
 ############################################
     #Publish
     def pubToNet(self):
-	joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
 
 
 	if(self.mode ==1):
@@ -197,13 +195,13 @@ class Ui_Form(object):
 	#State sensitive publishing (blocks signals while in safe mode)
 	#While Safe
 	if(self.mode == 0):
-	    joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
+	    self.joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
 	#While DAQ
 	elif(self.mode == 1):
-	    joint_pub.publish(self.amp_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	    self.joint_pub.publish(self.amp_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 	#While Teleop
 	elif(self.mode == 2):
-	    joint_pub.publish(self.amp_teleop, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	    self.joint_pub.publish(self.amp_teleop, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 ############################################
 #		   PUB			   #
 ############################################
@@ -256,13 +254,22 @@ class Ui_Form(object):
 
 
 
-    #Reset callbacks
-    def resetBuild(self):
-	#
-	print("")
-    def resetMemory(self):
-	#
-	print("")
+    def stateCallback(self, data):
+	self.state = data.act_pos
+
+    def setHome(self, data):
+	if(self.homeState == 0):
+	    self.homeState = 1
+	    self.lastState = self.state
+	    self.state = 0
+	if(self.homeState == 1):
+	    gamma1 = gamma1 + self.state[0]
+	    gamma2 = gamma2 + self.state[1]
+	    gam = Float64MultiArray()
+	    gam.data = [gamma1, gamma2]
+	    self.pubGamma.publish(gam)
+	    self.homeState = 0
+	    self.state = self.lastState
 
 
 
@@ -286,6 +293,9 @@ class Ui_Form(object):
 	rospy.Subscriber('daq_pos_ref', Float64MultiArray, self.posCallback)
 	rospy.Subscriber('gamma_store', Float64MultiArray, self.gammaCallback)
 	rospy.Subscriber('stimulate', Float32, self.stim)
+
+	self.joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+	rospy.Subscriber("rdd/joint_stats", JointStates, self.stateCallback)
 	
 	#Object variables
 	self.gamma = (0.0, 0.0)
@@ -296,12 +306,15 @@ class Ui_Form(object):
 	self.vel_sat = (1.0, 1.0)
 	self.tau_sat = (1.0, 1.0)
 	self.stiff_val = (1.0, 1.0)
+	self.state = (0.0, 0.0)
 	self.faa_val = 10
 	self.mode = 0
 	self.amplify = 1.0
         self.mPar = 1.0
 	self.startCnt = 0
 	self.fileName = ""
+	self.homeState = 0
+	self.lastState = 0
 
 	#Object resize variables + variable object
 	self.resizeVal = 1.0
@@ -309,7 +322,7 @@ class Ui_Form(object):
 
 	#Define widget dimmensions
         Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(390, 600)
+        Form.resize(390, 650)
 
 	#Main text
         self.textMain = QtGui.QTextEdit(Form)
@@ -349,8 +362,12 @@ class Ui_Form(object):
         self.textMPar.setObjectName(_fromUtf8("textEdit_10"))
 	#Text for resize
         self.textResize = QtGui.QTextEdit(Form)
-        self.textResize.setGeometry(QtCore.QRect(10, 550, 120, 30))
+        self.textResize.setGeometry(QtCore.QRect(10, 555, 120, 30))
         self.textResize.setObjectName(_fromUtf8("textEdit_11"))
+	#Text for setting home
+	self.textSetHome = QtGui.QTextEdit(Form)
+        self.textSetHome.setGeometry(QtCore.QRect(10, 595, 120, 30))
+        self.textSetHome.setObjectName(_fromUtf8("textEdit_12"))
 
 	#Home pushbuttons
         self.pushHome1 = QtGui.QPushButton(Form)
@@ -374,6 +391,10 @@ class Ui_Form(object):
         self.pushResetMemory = QtGui.QPushButton(Form)
         self.pushResetMemory.setGeometry(QtCore.QRect(270, 10, 110, 40))
         self.pushResetMemory.setObjectName(_fromUtf8("pushButton_6"))
+	#Home setting pushbuttons
+        self.pushSetHome = QtGui.QPushButton(Form)
+        self.pushSetHome.setGeometry(QtCore.QRect(200, 595, 110, 30))
+        self.pushSetHome.setObjectName(_fromUtf8("pushButton_7"))
 
 	#Teleop sliders
         self.slideT1 = QtGui.QSlider(Form)
@@ -439,7 +460,7 @@ class Ui_Form(object):
 	self.slideMPar.setTickInterval(1)
 	#Resize slider
         self.slideResize = QtGui.QSlider(Form)
-        self.slideResize.setGeometry(QtCore.QRect(220, 550, 160, 30))
+        self.slideResize.setGeometry(QtCore.QRect(220, 555, 160, 30))
         self.slideResize.setOrientation(QtCore.Qt.Horizontal)
         self.slideResize.setObjectName(_fromUtf8("horizontalSlider_9"))
 	self.slideResize.setMinimum(10)
@@ -512,6 +533,7 @@ class Ui_Form(object):
 	#Create Reset objects w/ callbacks
 	QtCore.QObject.connect(self.pushResetBuild, QtCore.SIGNAL(_fromUtf8("clicked()")), self.resetBuild)
 	QtCore.QObject.connect(self.pushResetMemory, QtCore.SIGNAL(_fromUtf8("clicked()")), self.resetMemory)
+	QtCore.QObject.connect(self.pushSetHome, QtCore.SIGNAL(_fromUtf8("clicked()")), self.setHome)
 
 
 
@@ -541,7 +563,7 @@ class Ui_Form(object):
         #Specialized texts resize
         self.textAmp.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(475*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
         self.textMPar.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(515*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
-        self.textResize.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(550*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
+        self.textResize.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(555*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
 
 	#    PUSHBUTTONS
 	#Home pushbutton
@@ -566,7 +588,7 @@ class Ui_Form(object):
 	#Specialized slide resize
         self.slideAmp.setGeometry(QtCore.QRect(int(round(220*self.rV)), int(round(475*self.rV)), int(round(160*self.rV)), int(round(30*self.rV))))
         self.slideMPar.setGeometry(QtCore.QRect(int(round(220*self.rV)), int(round(515*self.rV)), int(round(160*self.rV)), int(round(30*self.rV))))
-        self.slideResize.setGeometry(QtCore.QRect(int(round(220*self.rV)), int(round(550*self.rV)), int(round(160*self.rV)), int(round(30*self.rV))))
+        self.slideResize.setGeometry(QtCore.QRect(int(round(220*self.rV)), int(round(555*self.rV)), int(round(160*self.rV)), int(round(30*self.rV))))
 
 	#    LABELS
 	#Teleop labels
@@ -620,7 +642,7 @@ class Ui_Form(object):
 	#Text for mPar
         self.textMPar.setGeometry(QtCore.QRect(10, 515, 120, 30))
 	#Text for resize
-        self.textResize.setGeometry(QtCore.QRect(10, 550, 120, 30))
+        self.textResize.setGeometry(QtCore.QRect(10, 555, 120, 30))
 
 	#Home pushbuttons
         self.pushHome1.setGeometry(QtCore.QRect(50, 165, 100, 27))
@@ -654,7 +676,7 @@ class Ui_Form(object):
         self.slideMPar.setGeometry(QtCore.QRect(220, 515, 160, 30))
 	self.slideMPar.setValue(100)
 	#Resize slider
-        self.slideResize.setGeometry(QtCore.QRect(220, 550, 160, 30))
+        self.slideResize.setGeometry(QtCore.QRect(220, 555, 160, 30))
 	self.slideResize.setValue(10)
 
 	#Labels for additional sliders
@@ -797,11 +819,16 @@ class Ui_Form(object):
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Resize</p></body></html>", None))
-	#Reset buttons
+	#Reset buttons font setup
         self.pushResetBuild.setText(_translate("Form", "R Build", None))
         self.pushResetMemory.setText(_translate("Form", "R Memory", None))
-
-
+	#Home setting font setup
+        self.textSetHome.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home Set</p></body></html>", None))
+        self.pushSetHome.setText(_translate("Form", "Home Set", None))
 
 
 
