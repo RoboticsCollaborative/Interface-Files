@@ -242,7 +242,7 @@ class DAQ_Collect(object):
 		        gamma.data = [self.gamma1, self.gamma2]
 		        self.pubGam.publish(gamma)
 		    else:
-			self.pubStim.publish(9.9)
+			self.pubStim.publish(12.12)
         #Catch errors on loop intervals
             except KeyboardInterrupt:
                 pass
