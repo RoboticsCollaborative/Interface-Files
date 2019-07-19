@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(beginner_tutorials)
+project(interface)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -12,7 +12,7 @@ project(beginner_tutorials)
 #set(SOURCE_FILES sinGen.py)
 
 # Add executable target with source files listed in SOURCE_FILES variable
-#add_executable(beginner_tutorials ${SOURCE_FILES})
+#add_executable(interface ${SOURCE_FILES})
 
 
 

@@ -65,8 +65,9 @@ class DAQ_Collect(object):
     def callbackGamma(self, data):
 	self.gamma1 = data.data[0]
 	self.gamma2 = data.data[1]
-
 	self.safety = 1.0
+    def callbackState(self, data):
+	self.state = data.act_pos
 
 
 
@@ -75,6 +76,7 @@ class DAQ_Collect(object):
     #    Setup During Object Initialization Method    #
     ###################################################
     def setup(self):
+	self.state = (0.0, 0.0)
         #Previous run
         self.lastFinalOut1 = 0
         self.lastFinalOut2 = 0
@@ -120,6 +122,7 @@ class DAQ_Collect(object):
         rospy.Subscriber('gui_home', Float32, self.callbackHT)
 	rospy.Subscriber('gamma_keep', Float64MultiArray, self.callbackGamma)
 	self.joint_pub = rospy.Publisher("rdd/joint_cmds", JointCommands, queue_size=1)
+	rospy.Subscriber('rdd/joint_stats', JointStates, self.callbackState)
 
 
         #Configure DAQ device
@@ -202,7 +205,10 @@ class DAQ_Collect(object):
 
 
 
-
+		    if(self.startCnt == 0):
+			self.oVal1 = self.state[0]
+			self.oVal2 = self.state[1]
+			self.startCnt = 1
 
 
 
