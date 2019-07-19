@@ -204,30 +204,26 @@ class DAQ_Collect(object):
 
 
 
-		    if(self.startCnt == 0):
-		        self.gamma1 = self.val1 - self.oVal1
-		        self.gamma2 = self.val2 - self.oVal2
-			self.startCnt = 2
-
-
 
 
 
 
 		    if(self.safety != 0.0):
 		        #Check home reset signals
-		        if(self.hTVal == 111):
+		        if((self.hTVal == 111) or (self.startCnt < 30)):
 		            self.gamma1 = self.val1 - self.oVal1
 		    	    gamma = Float64MultiArray()
 		    	    gamma.data = [self.gamma1, self.gamma2]
 		    	    self.pubGam.publish(gamma)
 		            self.hTVal = 000
-		        if(self.hTVal == 222):
+			    self.startCnt = self.startCnt + 1
+		        if((self.hTVal == 222) or (self.startCnt < 30)):
 		            self.gamma2 = self.val2 - self.oVal2
 		    	    gamma = Float64MultiArray()
 		    	    gamma.data = [self.gamma1, self.gamma2]
 		    	    self.pubGam.publish(gamma)
 		            self.hTVal = 000
+			    self.startCnt = self.startCnt + 1
 
 		        #Create final variables accounting for reference frames
 		        self.finalOut1 = (self.val1 - self.gamma1 - self.oVal1)
