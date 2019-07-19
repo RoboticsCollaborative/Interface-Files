@@ -207,7 +207,7 @@ class DAQ_Collect(object):
 		    if(self.startCnt == 0):
 		        self.gamma1 = self.val1 - self.oVal1
 		        self.gamma2 = self.val2 - self.oVal2
-			self.startCnt = 1
+			self.startCnt = 2
 
 
 
