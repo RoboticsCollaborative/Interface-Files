@@ -262,12 +262,11 @@ class Ui_Form(object):
 	    self.homeState = 1
 	    self.lastState = self.mode
 	    self.mode = 0
+	    self.oState = self.state
 	if(self.homeState == 1):
-	    gamma1 = self.gamma[0] + self.state[0]
-	    gamma2 = self.gamma[1] + self.state[1]
-	    gam = Float64MultiArray()
-	    gam.data = [gamma1, gamma2]
-	    self.pubGamma.publish(gam)
+	    offset1 = self.state[0] - self.oState[0]
+	    offset2 = self.state[1] - self.oState[1]
+	    self.offset = (offset1, offset2)
 	    self.homeState = 0
 	    self.mode = self.lastState
 
@@ -306,7 +305,9 @@ class Ui_Form(object):
 	self.vel_sat = (1.0, 1.0)
 	self.tau_sat = (1.0, 1.0)
 	self.stiff_val = (1.0, 1.0)
+	self.oState = (0.0, 0.0)
 	self.state = (0.0, 0.0)
+	self.offset = (0.0, 0.0)
 	self.faa_val = 10
 	self.mode = 0
 	self.amplify = 1.0
@@ -545,7 +546,7 @@ class Ui_Form(object):
 	self.rV = size
 
 	#Widget resize
-        Form.resize(int(round(390*self.rV)), int(round(600*self.rV)))
+        Form.resize(int(round(390*self.rV)), int(round(650*self.rV)))
 
 	#    TEXT
 	#Main text
@@ -564,6 +565,7 @@ class Ui_Form(object):
         self.textAmp.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(475*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
         self.textMPar.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(515*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
         self.textResize.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(555*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
+        self.textSetHome.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(595*self.rV)), int(round(120*self.rV)), int(round(30*self.rV))))
 
 	#    PUSHBUTTONS
 	#Home pushbutton
@@ -576,6 +578,8 @@ class Ui_Form(object):
 	#Resize reset pushbuttons
         self.pushResetBuild.setGeometry(QtCore.QRect(int(round(10*self.rV)), int(round(10*self.rV)), int(round(110*self.rV)), int(round(40*self.rV))))
         self.pushResetMemory.setGeometry(QtCore.QRect(int(round(270*self.rV)), int(round(10*self.rV)), int(round(110*self.rV)), int(round(40*self.rV))))
+        self.pushSetHome.setGeometry(QtCore.QRect(int(round(200*self.rV)), int(round(595*self.rV)), int(round(110*self.rV)), int(round(30*self.rV))))
+
 	#    SLIDERS
 	#Teleop sliders
         self.slideT1.setGeometry(QtCore.QRect(int(round(20*self.rV)), int(round(75*self.rV)), int(round(160*self.rV)), int(round(30*self.rV))))
@@ -623,7 +627,7 @@ class Ui_Form(object):
         self.mPar = 1.0
 	self.fileName = ""
 
-        Form.resize(390, 600)
+        Form.resize(390, 650)
 
 	#Main text
         self.textMain.setGeometry(QtCore.QRect(130, 15, 130, 50))
@@ -643,6 +647,7 @@ class Ui_Form(object):
         self.textMPar.setGeometry(QtCore.QRect(10, 515, 120, 30))
 	#Text for resize
         self.textResize.setGeometry(QtCore.QRect(10, 555, 120, 30))
+        self.textSetHome.setGeometry(QtCore.QRect(10, 595, 120, 30))
 
 	#Home pushbuttons
         self.pushHome1.setGeometry(QtCore.QRect(50, 165, 100, 27))
@@ -654,6 +659,7 @@ class Ui_Form(object):
 	#Reset pushbuttons
         self.pushResetBuild.setGeometry(QtCore.QRect(10, 10, 110, 40))
         self.pushResetMemory.setGeometry(QtCore.QRect(270, 10, 110, 40))
+        self.pushSetHome.setGeometry(QtCore.QRect(200, 595, 110, 30))
 	#Teleop sliders
         self.slideT1.setGeometry(QtCore.QRect(20, 75, 160, 30))
         self.slideT2.setGeometry(QtCore.QRect(210, 75, 160, 30))
