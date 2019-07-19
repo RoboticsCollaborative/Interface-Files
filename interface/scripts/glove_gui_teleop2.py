@@ -250,7 +250,7 @@ class Ui_Form(object):
     #Relative path of file
     def getFileName(self):
 	dirname = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
-	self.fileName = os.path.join(dirname, 'ros_mc_signal_teleop3.py')
+	self.fileName = os.path.join(dirname, 'ros_mc_signal_teleop4.py')
 
 
 
