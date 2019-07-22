@@ -93,7 +93,7 @@ class Ui_Form(object):
 
 
 
-    #Home reset calls
+    #Home reset callbacks
     def homeTheta1(self):
 	print 'New home value for theta one has been reset'
 	signalOut = 111
@@ -102,9 +102,6 @@ class Ui_Form(object):
 	print "New home value for theta two has been reset"
 	signalOut = 222
 	self.pubHome.publish(signalOut)
-
-
-
     #Additional callbacks
     def maxVelocity(self):
 	vel = float(float(self.slideVelocity.value())/20.0)
@@ -145,24 +142,6 @@ class Ui_Form(object):
 
 
 
-    #Change the operation mode
-    def modeChange(self):
-        if(self.mode == 0):
-	    self.labelMode.setText('   DAQ')
-	    self.getFileName()
-	    self.proc = subprocess.Popen(self.fileName, shell = False )
-	    self.mode = 1
-	elif(self.mode == 1):
-	    self.labelMode.setText(' TELEOP')
-	    self.proc.kill()
-	    os.system('clear')
-	    self.mode = 2
-	elif(self.mode == 2):
-	    self.labelMode.setText('   SAFE')
-	    self.mode = 0
-
-
-
 ############################################
 #		    PUB			   #
 ############################################
@@ -170,8 +149,9 @@ class Ui_Form(object):
     def pubToNet(self):
 
 
-	if(self.mode ==1):
-	    self.amp_ref = (float(self.amplify*(float(self.pos_ref[0]))), float(self.amplify*(float(self.pos_ref[1]))))
+	if(self.mode != 2):
+	    self.offset_ref = (self.pos_ref[0] + self.offset[0], self.pos_ref[1] + self.offset[1]) 
+	    self.amp_ref = (float(self.amplify*(float(self.offset_ref[0]))), float(self.amplify*(float(self.offset_ref[1]))))
 	    #Check for values outside of min/max parameter
 	    if(self.amp_ref[0] >= self.mPar):
 	        self.amp_ref = (self.mPar, self.amp_ref[1])
@@ -181,7 +161,7 @@ class Ui_Form(object):
 	        self.amp_ref = (self.amp_ref[0], self.mPar)
 	    elif(self.amp_ref[1] <= ((-1)*(self.mPar))):
 	        self.amp_ref = (self.amp_ref[0], (-1)*(self.mPar))
-	elif(self.mode ==2):
+	elif(self.mode == 2):
 	    self.amp_teleop = (float(self.amplify*(float(self.teleopTheta[0]))), float(self.amplify*(float(self.teleopTheta[1]))))
 	    #Check for values outside of min/max parameter
 	    if(self.amp_teleop[0] >= self.mPar):
@@ -195,13 +175,15 @@ class Ui_Form(object):
 	#State sensitive publishing (blocks signals while in safe mode)
 	#While Safe
 	if(self.mode == 0):
-	    self.joint_pub.publish((0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), 10)
+	    self.joint_pub.publish((0.0, 0.0), (1.0, 1.0), (0.0, 0.0), (0.0, 0.0), 10)
 	#While DAQ
 	elif(self.mode == 1):
 	    self.joint_pub.publish(self.amp_ref, self.vel_sat, self.tau_sat, self.stiff_val, 10)
 	#While Teleop
 	elif(self.mode == 2):
 	    self.joint_pub.publish(self.amp_teleop, self.vel_sat, self.tau_sat, self.stiff_val, 10)
+	elif(self.mode == 3):
+	    self.joint_pub.publish(self.state, (5.0, 5.0), (5.0, 5.0), (0.0, 0.0), 10)
 ############################################
 #		   PUB			   #
 ############################################
@@ -238,6 +220,9 @@ class Ui_Form(object):
 	self.resizeVal = (float(self.slideResize.value())/10)
 	self.resizeUi(self.resizeVal)
 	self.labelResize.setText(_translate("Form", str(self.resizeVal), None))
+    #Get motor position
+    def stateCallback(self, data):
+	self.state = data.act_pos
 
 
 
@@ -252,23 +237,42 @@ class Ui_Form(object):
 	dirname = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
 	self.fileName = os.path.join(dirname, 'ros_mc_signal_teleop4.py')
 
+    #State methods
 
+    #Change the operation mode
+    def modeChange(self):
+        if(self.mode == 0):
+	    self.labelMode.setText('   DAQ')
+	    self.getFileName()
+	    self.proc = subprocess.Popen(self.fileName, shell = False )
+	    self.mode = 1
+	elif(self.mode == 1):
+	    self.labelMode.setText(' TELEOP')
+	    self.proc.kill()
+	    os.system('clear')
+	    self.mode = 2
+	elif(self.mode == 2):
+	    self.labelMode.setText('   SAFE')
+	    self.mode = 0
 
-    def stateCallback(self, data):
-	self.state = data.act_pos
-
+    #Set custom gripper state
     def setHome(self):
+	#First click
 	if(self.homeState == 0):
 	    self.homeState = 1
 	    self.lastState = self.mode
-	    self.mode = 0
-	    self.oState = self.state
-	if(self.homeState == 1):
+	    self.mode = 3
+	    if(self.stateCnt == 0):
+	        self.oState = self.state
+	        self.stateCnt = 1
+	#Second click
+	elif(self.homeState == 1):
+	    self.mode = self.lastState
 	    offset1 = self.state[0] - self.oState[0]
 	    offset2 = self.state[1] - self.oState[1]
 	    self.offset = (offset1, offset2)
 	    self.homeState = 0
-	    self.mode = self.lastState
+	    self.pubToNet()
 
 
 
@@ -299,6 +303,7 @@ class Ui_Form(object):
 	#Object variables
 	self.gamma = (0.0, 0.0)
 	self.pos_ref = (0.0, 0.0)
+	self.offset_ref = (0.0, 0.0)
 	self.amp_ref = (0.0, 0.0)
 	self.teleopTheta = (0.0, 0.0)
 	self.amp_teleop = (0.0, 0.0)
@@ -316,6 +321,7 @@ class Ui_Form(object):
 	self.fileName = ""
 	self.homeState = 0
 	self.lastState = 0
+	self.stateCnt = 0
 
 	#Object resize variables + variable object
 	self.resizeVal = 1.0
@@ -323,7 +329,7 @@ class Ui_Form(object):
 
 	#Define widget dimmensions
         Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(390, 650)
+        Form.resize(390, 640)
 
 	#Main text
         self.textMain = QtGui.QTextEdit(Form)
@@ -733,6 +739,9 @@ class Ui_Form(object):
 	#Object variables
 	self.gamma = (0.0, 0.0)
 	self.pos_ref = (0.0, 0.0)
+	self.offset = (0.0, 0.0)
+	self.oState = (0.0, 0.0)
+	self.state = (0.0, 0.0)
 	self.amp_ref = (0.0, 0.0)
 	self.teleopTheta = (0.0, 0.0)
 	self.amp_teleop = (0.0, 0.0)
