@@ -61,6 +61,8 @@ except AttributeError:
 
 
 
+
+
 #########################
 #########################
 #####    UI CLASS   #####
@@ -75,9 +77,6 @@ class Ui_Form(object):
     #########################
     #    Callback Methods   #
     #########################
-
-
-
     #Teleop theta call
     def theta(self):
 	theta1 = self.slideT1.value()
@@ -91,15 +90,11 @@ class Ui_Form(object):
 	self.pubTOut.publish(self.teleopTheta)
 	self.pubToNet()
 
-
-
     #Home reset callbacks
     def homeTheta1(self):
-	print 'New home value for theta one has been reset'
 	signalOut = 111
 	self.pubHome.publish(signalOut)
     def homeTheta2(self):
-	print "New home value for theta two has been reset"
 	signalOut = 222
 	self.pubHome.publish(signalOut)
     #Additional callbacks
@@ -142,13 +137,15 @@ class Ui_Form(object):
 
 
 
+
+
+############################################
+
 ############################################
 #		    PUB			   #
 ############################################
     #Publish
     def pubToNet(self):
-
-
 	if(self.mode != 2):
 	    self.offset_ref = (self.pos_ref[0] + self.offset[0], self.pos_ref[1] + self.offset[1]) 
 	    self.amp_ref = (float(self.amplify*(float(self.offset_ref[0]))), float(self.amplify*(float(self.offset_ref[1]))))
@@ -188,6 +185,10 @@ class Ui_Form(object):
 #		   PUB			   #
 ############################################
 
+############################################
+
+
+
 
 
     #####################################
@@ -224,20 +225,19 @@ class Ui_Form(object):
     def stateCallback(self, data):
 	self.state = data.act_pos
 
-
-
     #Kill child program
     def abort(self):
-	self.proc.kill()
-	os.system('clear')
-	self.mode = 0
-	self.labelMode.setText('   SAFE')
+	if(self.mode == 1):
+	    self.proc.kill()
+	    os.system('clear')
+	    self.mode = 0
+	    self.labelMode.setText('   SAFE')
+	else:
+	    print("No child process to kill, mode not set to DAQ")
     #Relative path of file
     def getFileName(self):
 	dirname = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
 	self.fileName = os.path.join(dirname, 'ros_mc_signal_teleop4.py')
-
-    #State methods
 
     #Change the operation mode
     def modeChange(self):
@@ -273,6 +273,8 @@ class Ui_Form(object):
 	    self.offset = (offset1, offset2)
 	    self.homeState = 0
 	    self.pubToNet()
+
+
 
 
 
@@ -329,7 +331,7 @@ class Ui_Form(object):
 
 	#Define widget dimmensions
         Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(390, 640)
+        Form.resize(390, 635)
 
 	#Main text
         self.textMain = QtGui.QTextEdit(Form)
@@ -544,6 +546,8 @@ class Ui_Form(object):
 
 
 
+
+
     ##########################
     #    Ui Resize Method    #
     ##########################
@@ -552,7 +556,7 @@ class Ui_Form(object):
 	self.rV = size
 
 	#Widget resize
-        Form.resize(int(round(390*self.rV)), int(round(650*self.rV)))
+        Form.resize(int(round(390*self.rV)), int(round(635*self.rV)))
 
 	#    TEXT
 	#Main text
@@ -631,9 +635,8 @@ class Ui_Form(object):
 	self.faa_val = 10
 	self.amplify = 1.0
         self.mPar = 1.0
-	self.fileName = ""
 
-        Form.resize(390, 650)
+        Form.resize(390, 635)
 
 	#Main text
         self.textMain.setGeometry(QtCore.QRect(130, 15, 130, 50))
@@ -710,6 +713,8 @@ class Ui_Form(object):
 
 
 
+
+
     ################################
     #    Ui Reset Memory Method    #
     ################################
@@ -736,17 +741,28 @@ class Ui_Form(object):
 	rospy.Subscriber('gamma_store', Float64MultiArray, self.gammaCallback)
 	rospy.Subscriber('stimulate', Float32, self.stim)
 	
-	#Object variables
+	#Reset variables
 	self.gamma = (0.0, 0.0)
 	self.pos_ref = (0.0, 0.0)
-	self.offset = (0.0, 0.0)
-	self.oState = (0.0, 0.0)
-	self.state = (0.0, 0.0)
+	self.offset_ref = (0.0, 0.0)
 	self.amp_ref = (0.0, 0.0)
 	self.teleopTheta = (0.0, 0.0)
 	self.amp_teleop = (0.0, 0.0)
+	self.oState = (0.0, 0.0)
+	self.state = (0.0, 0.0)
+	self.offset = (0.0, 0.0)
 	self.mode = 0
 	self.startCnt = 0
+	self.homeState = 0
+	self.lastState = 0
+	self.stateCnt = 0
+
+	#Object resize variables + variable object
+	self.resizeVal = 1.0
+	self.Shape = Form
+
+	os.system('clear')
+
 
 
 
@@ -766,18 +782,18 @@ class Ui_Form(object):
         self.labelT1.setText(_translate("Form", "Theta One", None))
         self.labelT2.setText(_translate("Form", "Theta Two", None))
 	#Text home resets
-        self.pushHome1.setText(_translate("Form", "Reset One", None))
+        self.pushHome1.setText(_translate("Form", "Reset Index", None))
         self.textH1.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home One</p></body></html>", None))
-        self.pushHome2.setText(_translate("Form", "Reset Two", None))
+"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Reset Index</p></body></html>", None))
+        self.pushHome2.setText(_translate("Form", "Reset Wrist", None))
         self.textH2.setHtml(_translate("Form", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home Two</p></body></html>", None))
+"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Reset Wrist</p></body></html>", None))
 	#Additional texts
         self.labelVelocity.setText(_translate("Form", "Velocity", None))
         self.labelTorque.setText(_translate("Form", " Torque", None))
@@ -844,6 +860,10 @@ class Ui_Form(object):
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Home Set</p></body></html>", None))
         self.pushSetHome.setText(_translate("Form", "Home Set", None))
+
+
+
+
 
 
 
